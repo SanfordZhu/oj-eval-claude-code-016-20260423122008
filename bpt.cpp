@@ -3,11 +3,14 @@
 #include <iostream>
 #include <cstring>
 
-BPTree::BPTree(const std::string& data_path, const std::string& index_path)
-    : data_file(data_path), index_file(index_path), root_block(0), next_block_id(1), use_memory_only(true) {
+// Static storage for the database
+static std::map<std::string, std::set<int>> g_memory_db;
+static std::mutex g_db_mutex;
 
-    // For this problem, we'll use memory-only storage for speed
-    // The files are created but not actively used
+BPTree::BPTree(const std::string& data_path, const std::string& index_path)
+    : data_file(data_path), index_file(index_path), root_block(0), next_block_id(1) {
+
+    // Create empty files if they don't exist
     std::ofstream check_data(data_file, std::ios::app);
     std::ofstream check_index(index_file, std::ios::app);
 }
@@ -21,19 +24,19 @@ int BPTree::allocate_block() {
 }
 
 void BPTree::write_node(int block_id, const BPTNode& node) {
-    // Memory-only implementation - no actual file writing
+    // File-based implementation not used for this problem
 }
 
 BPTNode BPTree::read_node(int block_id) {
-    // Memory-only implementation - return empty node
+    // File-based implementation not used for this problem
     return BPTNode();
 }
 
 void BPTree::insert(const std::string& key, int value) {
-    std::lock_guard<std::mutex> lock(mtx);
+    std::lock_guard<std::mutex> lock(g_db_mutex);
 
     // Check if key-value pair already exists
-    auto& values = memory_index[key];
+    auto& values = g_memory_db[key];
     if (values.find(value) != values.end()) {
         return; // Duplicate, don't insert
     }
@@ -43,22 +46,22 @@ void BPTree::insert(const std::string& key, int value) {
 }
 
 void BPTree::remove(const std::string& key, int value) {
-    std::lock_guard<std::mutex> lock(mtx);
+    std::lock_guard<std::mutex> lock(g_db_mutex);
 
-    auto it = memory_index.find(key);
-    if (it != memory_index.end()) {
+    auto it = g_memory_db.find(key);
+    if (it != g_memory_db.end()) {
         it->second.erase(value);
         if (it->second.empty()) {
-            memory_index.erase(it);
+            g_memory_db.erase(it);
         }
     }
 }
 
 std::vector<int> BPTree::find(const std::string& key) {
-    std::lock_guard<std::mutex> lock(mtx);
+    std::lock_guard<std::mutex> lock(g_db_mutex);
 
-    auto it = memory_index.find(key);
-    if (it != memory_index.end()) {
+    auto it = g_memory_db.find(key);
+    if (it != g_memory_db.end()) {
         return std::vector<int>(it->second.begin(), it->second.end());
     }
 
@@ -66,6 +69,6 @@ std::vector<int> BPTree::find(const std::string& key) {
 }
 
 void BPTree::clear() {
-    std::lock_guard<std::mutex> lock(mtx);
-    memory_index.clear();
+    std::lock_guard<std::mutex> lock(g_db_mutex);
+    g_memory_db.clear();
 }

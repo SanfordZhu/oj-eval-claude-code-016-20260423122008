@@ -8,10 +8,12 @@
 #include <fstream>
 #include <memory>
 #include <mutex>
+#include <algorithm>
 
-const int BPT_ORDER = 100;  // B+ tree order (reduced for simplicity)
+const int BPT_ORDER = 50;  // B+ tree order
 const std::string DATA_FILE = "data.bpt";
 const std::string INDEX_FILE = "index.bpt";
+const int BLOCK_SIZE = 4096;
 
 struct BPTNode {
     bool is_leaf;
@@ -30,16 +32,15 @@ private:
     std::string index_file;
     int root_block;
     int next_block_id;
-    std::map<std::string, std::set<int>> memory_index; // In-memory index for speed
     std::mutex mtx;
-    bool use_memory_only;
 
     int allocate_block();
     void write_node(int block_id, const BPTNode& node);
     BPTNode read_node(int block_id);
     void insert_to_leaf(const std::string& key, int value);
-    void split_and_insert_leaf(const std::string& key, int value);
-    void insert_to_parent(int left_block, const std::string& key, int right_block);
+    int find_leaf_for_insert(const std::string& key);
+    std::vector<int> find_in_tree(const std::string& key);
+    void delete_from_leaf(const std::string& key, int value);
 
 public:
     BPTree(const std::string& data_path = DATA_FILE, const std::string& index_path = INDEX_FILE);
