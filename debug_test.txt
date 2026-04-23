@@ -1,0 +1,22 @@
+20
+insert key1 10
+insert key1 20
+insert key1 15
+find key1
+insert key2 100
+find key2
+find key3
+delete key1 15
+find key1
+delete key1 10
+find key1
+delete key1 20
+find key1
+insert key1 30
+find key1
+delete key2 100
+find key2
+insert key3 1
+insert key3 2
+insert key3 3
+find key3

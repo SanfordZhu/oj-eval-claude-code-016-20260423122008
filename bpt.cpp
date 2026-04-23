@@ -2,34 +2,60 @@
 #include <algorithm>
 #include <iostream>
 #include <cstring>
+#include <sstream>
 
-// Static storage for the database
+// Global storage for the database - persists across operations
 static std::map<std::string, std::set<int>> g_memory_db;
 static std::mutex g_db_mutex;
+static bool g_loaded = false;
 
 BPTree::BPTree(const std::string& data_path, const std::string& index_path)
-    : data_file(data_path), index_file(index_path), root_block(0), next_block_id(1) {
+    : data_file(data_path), index_file(index_path) {
 
-    // Create empty files if they don't exist
-    std::ofstream check_data(data_file, std::ios::app);
-    std::ofstream check_index(index_file, std::ios::app);
+    // Load existing data on initialization
+    load_from_file();
 }
 
 BPTree::~BPTree() {
-    // Cleanup if needed
+    // Save data on destruction
+    save_to_file();
 }
 
-int BPTree::allocate_block() {
-    return next_block_id++;
+void BPTree::load_from_file() {
+    std::lock_guard<std::mutex> lock(g_db_mutex);
+
+    if (g_loaded) return; // Already loaded
+
+    std::ifstream in(data_file);
+    if (!in.good()) {
+        g_loaded = true;
+        return; // No existing data
+    }
+
+    std::string line;
+    while (std::getline(in, line)) {
+        std::istringstream iss(line);
+        std::string key;
+        int value;
+        if (iss >> key >> value) {
+            g_memory_db[key].insert(value);
+        }
+    }
+
+    g_loaded = true;
 }
 
-void BPTree::write_node(int block_id, const BPTNode& node) {
-    // File-based implementation not used for this problem
-}
+void BPTree::save_to_file() {
+    std::lock_guard<std::mutex> lock(g_db_mutex);
 
-BPTNode BPTree::read_node(int block_id) {
-    // File-based implementation not used for this problem
-    return BPTNode();
+    std::ofstream out(data_file);
+    if (!out.good()) return;
+
+    for (const auto& pair : g_memory_db) {
+        for (int value : pair.second) {
+            out << pair.first << " " << value << "\n";
+        }
+    }
 }
 
 void BPTree::insert(const std::string& key, int value) {
