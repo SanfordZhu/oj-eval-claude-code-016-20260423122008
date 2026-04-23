@@ -1,0 +1,12 @@
+CMakeFiles/
+CMakeCache.txt
+code
+*.o
+*.a
+*.so
+*.dylib
+*.exe
+*.out
+*.log
+data/
+test_data/
